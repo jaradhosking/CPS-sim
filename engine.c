@@ -28,8 +28,10 @@ struct Event {
     struct Event *Next;		// priority queue pointer
 };
 
+
 // Simulation clock variable
 double Now = 0.0;
+
 
 // Future Event List
 // Use an event structure as the header for the future event list (priority queue)
@@ -39,15 +41,21 @@ double Now = 0.0;
 // See the Remove() and Schedule() functions below.
 struct Event FEL ={-1.0, NULL, NULL};
 
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Prototypes for functions used within the Simulation Engine
 /////////////////////////////////////////////////////////////////////////////////////////////
 
+// Function to remove smallest timestamped event
+struct Event *Remove (void);
+
 // Function to print timestamps of events in event list
 void PrintList (void);
 
-// Function to remove smallest timestamped event
-struct Event *Remove (void);
+
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Simulation Engine Functions Internal to this module
@@ -76,6 +84,8 @@ void PrintList (void)
     }
     printf ("\n");
 }
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Simulation Engine functions visible to simulation application

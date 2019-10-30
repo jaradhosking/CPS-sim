@@ -11,8 +11,11 @@
 //
 // Application Independent Simulation Engine Interface
 //
+
+
+
 //
-// Function defined in the simulation engine called by the simulation application
+// Functions defined in the simulation engine called by the simulation application
 //
 
 // Call this procedure to run the simulation indicating time to end simulation
@@ -24,8 +27,10 @@ void Schedule (double ts, void *data);
 // This function returns the current simulation time
 double CurrentTime (void);
 
+
+
 //
-// Function defined in the simulation application called by the simulation engine
+// Functions defined in the simulation application called by the simulation engine
 //
 //  Event handler function: called to process an event
 void EventHandler (void *data);

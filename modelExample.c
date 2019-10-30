@@ -18,16 +18,11 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-
-double EndTime = -1;
+int	AtPump=0;	// #vehicles at the pump or waiting to use it; 0 if pump is free
 
 // Event types
 #define	ARRIVAL     1
 #define	DEPARTURE   2
-
-
-
-
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,29 +41,7 @@ double EndTime = -1;
 
 struct EventData {
     int EventType;
-    int ID;
 };
-
-
-// Data structure for a node in a linked list
-struct node {
-    int ID;
-    struct node *Next;
-};
-
-
-// Data structure which contains information about a queueing station
-typedef struct station {
-    int ID;
-    double P;
-    double *probabilities;
-    double *destinations;
-} station;
-
-
-// Exit Points List
-// Holds the int IDs of any exit points
-struct node exits = {-1, NULL};
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -79,36 +52,6 @@ struct node exits = {-1, NULL};
 // prototypes for event handlers
 void Arrival (struct EventData *e);		// car arrival event
 void Departure (struct EventData *e);	// car departure event
-
-
-
-
-// This function initializes the queue via information provided in the configuration file configFilename
-void readConfig(char *configFilename);
-
-// Creates a generator and produces new event arrival times from the created generator
-// P is the average interarrival time, D is the id of the component where generated items go,
-void createGenerator(double P, int D);
-
-// Creates an exit point
-void createExit(int ID);
-
-// Creates a queueing station with ID ID and average queueing time P, it sends customers
-// to destinations with given probabilities.
-void createStation(int ID, double P, double *probabilities, double *destinations);
-
-// This function writes to outputFilename the results of the simulation
-void writeResults(char *outputFilename);
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Model functions internal to this module
-//
-/////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -146,6 +89,51 @@ void EventHandler (void *data)
     free (d); // Release memory for event paramters
 }
 
+// event handler for arrival events
+void Arrival (struct EventData *e)
+{
+    struct EventData *d;
+    double ts;
+
+    printf ("Processing Arrival event at time %f, AtPump=%d\n", CurrentTime(), AtPump);
+    if (e->EventType != ARRIVAL) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
+
+    // schedule next arrival event, here, 10 time units from now
+    if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
+    d->EventType = ARRIVAL;
+    ts = CurrentTime() + 10.0;
+    Schedule (ts, d);
+
+    // if the pump is free, vehicle will use the pump for 16 time unts; schedule departure event
+    if (AtPump == 0) {
+        if ((d=malloc (sizeof(struct EventData))) == NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
+        d->EventType = DEPARTURE;
+        ts = CurrentTime() + 16.0;
+        Schedule (ts, d);
+    }
+    AtPump++;   // update state variable
+}
+
+// event handler for departure events
+void Departure (struct EventData *e)
+{
+    struct EventData *d;
+    double ts;
+
+    printf ("Processing Departure event at time %f, AtPump=%d\n", CurrentTime(), AtPump);
+    if (e->EventType != DEPARTURE) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
+
+    AtPump--;   // one fewer vehicle at pump
+
+    // If another vehicle waiting to use pump, allocate pump to vehicle, schedule its departure event
+    if (AtPump>0) {
+        if ((d=malloc (sizeof(struct EventData))) == NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
+        d->EventType = DEPARTURE;
+        ts = CurrentTime() + 16.0;
+        Schedule (ts, d);
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 //////////// MAIN PROGRAM
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -157,6 +145,7 @@ int main (void)
 
     // initialize event list with first arrival
     if ((d=malloc (sizeof(struct EventData))) == NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
+    d->EventType = ARRIVAL;
     ts = 10.0;
     Schedule (ts, d);
 
