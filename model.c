@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
 #include "sim.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,7 +96,7 @@ void createExit(int ID);
 
 // Creates a queueing station with ID ID and average queueing time P, it sends customers
 // to destinations with given probabilities.
-void createStation(int ID, double P, double *probabilities, double *destinations);
+void createStation(int ID, double P, double *probabilities, int *destinations);
 
 // This function writes to outputFilename the results of the simulation
 void writeResults(char *outputFilename);
@@ -107,6 +108,52 @@ void writeResults(char *outputFilename);
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
 
+void readConfig(char *configFilename) {
+    FILE *ifp = fopen(configFilename,"r");
+    if (ifp==NULL) {
+        printf("Error opening input file\n");
+        exit(1);
+    }
+    int numComponents;
+    char *numComponentsStr = NULL;
+    fscanf(ifp,"%s",numComponentsStr);
+    numComponents = strtol(numComponentsStr,NULL,10);
+    if (numComponents == 0) {
+        printf("Error: the first line of the configuration file should be a positive integer value representing"
+               " the number of components in the queueing network.");
+        exit(1);
+    }
+    for (int i = 0; i < numComponents; i++) {
+        int id;
+        char *type = NULL;
+        fscanf(ifp,"%d %s",&id,type);
+        if (strcmp(type,"G") == 0) {
+            double avgInterarrivalTime;
+            int destination;
+            fscanf(ifp,"%lf %d",&avgInterarrivalTime,&destination);
+            createGenerator(avgInterarrivalTime,destination);
+        }
+        else if (strcmp(type,"E") == 0) {
+            createExit(id);
+        }
+        else if (strcmp(type,"Q") == 0) {
+            double avgServiceTime;
+            int numRoutes;
+            fscanf(ifp,"%lf %d",&avgServiceTime,&numRoutes);
+            int *destinations = (int *)malloc(numRoutes*sizeof(int));
+            double *probs = (double *)malloc(numRoutes*sizeof(double));
+            for (int j = 0; j < numRoutes; j++) {
+                fscanf(ifp,"%lf %d",&probs[j],&destinations[j]);
+            }
+            createStation(id,avgServiceTime,probs,destinations);
+        }
+        else {
+            printf("Error: One of the component types is invalid.  Component types should be one of G, E, or "
+                   "Q, capitalized.");
+            exit(1);
+        }
+    }
+}
 
 
 
@@ -145,6 +192,8 @@ void EventHandler (void *data)
     else {fprintf (stderr, "Illegal event found\n"); exit(1); }
     free (d); // Release memory for event paramters
 }
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //////////// MAIN PROGRAM
