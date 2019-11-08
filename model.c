@@ -176,9 +176,9 @@ void readConfig(char *configFilename) {
 
 
 double rand_exp(double lambda){
-    double mu;
-    e = rand() / (RAND_MAX + 1.0);
-    return -log(1 - e) / lambda;
+    double u;
+    u = rand() / (RAND_MAX + 1.0);
+    return -log(1 - u) / lambda;
 }
 
 srand(time(NULL));
