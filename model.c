@@ -163,7 +163,7 @@ void readConfig(char *configFilename) {
             for (int j = 0; j < numRoutes; j++) {
                 fscanf(ifp,"%lf %d",&probs[j],&destinations[j]);
             }
-            createStation(id,avgServiceTime,probs,destinations,i);
+            createStation(id,avgServiceTime,probs,destinations);
             numQueues += 1;
         }
         else {
@@ -263,7 +263,24 @@ void EventHandler (void *data)
 
 
 // event handler for arrival events
+void Arrival (struct EventData *e)
+{
+    struct EventData *d;
+    double ts;
+    int componentID = e->componentID;
+    for (int i = 0; i <)
 
+
+    printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line",
+            CurrentTime(), e->customerID, e->componentID, inQueue[e->componentID]++);
+    if (e->EventType != ARRIVAL) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
+
+    // schedule next arrival event, here, 10 time units from now
+    if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
+    d->EventType = ARRIVAL;
+    ts = CurrentTime() + rand_exp();
+    Schedule (ts, d);
+}
 
 
 
