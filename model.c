@@ -21,7 +21,9 @@
 
 
 double EndTime = -1;
-int numQueues = 0;
+
+
+int customerIDiterator = 0; // Number of customers in the system
 
 // Event types
 #define	ARRIVAL     1
@@ -56,9 +58,11 @@ struct EventData {
 // Data structure which contains information about a queueing station
 typedef struct station {
     int ID;
+    int isExit;
     double P;
     double *probabilities;
-    double *destinations;
+    int *destinations;
+    int inQueue;
 } station;
 
 
@@ -83,9 +87,9 @@ struct node* exit_head;
 struct node* exit_end;
 
 
-// In Queue List
-// Holds the number of people in each queue
-int *inQueue;
+// Stations Array
+// Holds pointers to stations
+station* stations;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -117,6 +121,8 @@ void createStation(int ID, double P, double *probabilities, int *destinations);
 // This function writes to outputFilename the results of the simulation
 void writeResults(char *outputFilename);
 
+// Returns a random number corresponding to the exponential distribution with parameter lambda
+double rand_exp(double lambda);
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -162,7 +168,6 @@ void readConfig(char *configFilename) {
                 fscanf(ifp,"%lf %d",&probs[j],&destinations[j]);
             }
             createStation(id,avgServiceTime,probs,destinations);
-            numQueues += 1;
         }
         else {
             printf("Error: One of the component types is invalid.  Component types should be one of G, E, or "
@@ -170,7 +175,7 @@ void readConfig(char *configFilename) {
             exit(1);
         }
     }
-    int *inQueue = (int *)malloc(numQueues*sizeof(int));
+    stations = (station *)malloc(numComponents*sizeof(station));
 }
 
 
@@ -182,43 +187,54 @@ double rand_exp(double lambda){
     return -log(1 - u) / lambda;
 }
 
-srand(time(NULL));
-int customerIDiterator = 0;
+
+
 void createGenerator(double P, int D) {
     double total_time = 0.0;
     double new_arrival;
     while (total_time <= EndTime){
-        new_arrival = arrival(P);
-        new_event = struct EventData;
-        new_event->EventType = ARRIVAL;
-        new_event->componentID = D;
-        new_event->customerID = customerIDiterator;
-        Schedule(new_arrival,*new_event);
-        customerIDiterator++;
-        total_time = total_time + new_arrival;
+        new_arrival = rand_exp(P);
+        total_time += new_arrival;
+        if (total_time <= EndTime) {
+            struct EventData *new_event = (struct EventData *)malloc(sizeof(struct EventData));
+            new_event->EventType = ARRIVAL;
+            new_event->componentID = D;
+            new_event->customerID = customerIDiterator;
+            Schedule(total_time, new_event);
+            customerIDiterator++;
+        }
     }
-    free(total_time);
-    free(new_arrival);
+    free(&total_time);
+    free(&new_arrival);
 }
 
 
 
 void createExit(int ID) {
-    struct node * new_exit = (node*)malloc(sizeof(struct node*));
-    new_exit->ID = ID;
-    new_exit->Next = exit_head->Next;
-    exit_head->Next = *new_exit;
+    //struct node * new_exit = (node*)malloc(sizeof(struct node*));
+    //new_exit->ID = ID;
+    //new_exit->Next = exit_head->Next;
+    //exit_head->Next = new_exit;
+    station* new_station = (station *)malloc(sizeof(station));
+    new_station->ID=ID;
+    new_station->isExit=1;
+    new_station->P=-1;
+    new_station->probabilities=NULL;
+    new_station->destinations=NULL;
+    new_station->inQueue=-1;
+    stations[ID] = *new_station;
 }
 
-station* stations[numQueues] = {NULL};
-void createStation(int ID, double P, double *probabilities, int *destinations,int i) {
-    station* new_station;
+
+void createStation(int ID, double P, double *probabilities, int *destinations) {
+    station* new_station = (station *)malloc(sizeof(station));
     new_station->ID=ID;
+    new_station->isExit=0;
     new_station->P=P;
     new_station->probabilities=probabilities;
     new_station->destinations=destinations;
-    stations[i] = new_station;
-    }
+    new_station->inQueue=0;
+    stations[ID] = *new_station;
 }
 
 
@@ -288,6 +304,7 @@ void Arrival (struct EventData *e)
 
 int main (void)
 {
+    srand(time(0));
     exit_head = (struct node*)malloc(sizeof(struct node));
     exit_end = (struct node*)malloc(sizeof(struct node));
     exit_head->ID=-1;
