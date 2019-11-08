@@ -79,8 +79,11 @@ struct node {
 
 // Exit Points List
 // Holds the int IDs of any exit points
-struct node exits = {-1, NULL};
-
+struct node* exit_head = (struct node*)malloc(sizeof(struct node*));
+struct node* exit_end = (struct node*)malloc(sizeof(struct node*));
+exit_head->ID=-1;
+exit_end->ID=NULL;
+exit_head->Next=*exit_end;
 
 // In Queue List
 // Holds the number of people in each queue
@@ -160,7 +163,7 @@ void readConfig(char *configFilename) {
             for (int j = 0; j < numRoutes; j++) {
                 fscanf(ifp,"%lf %d",&probs[j],&destinations[j]);
             }
-            createStation(id,avgServiceTime,probs,destinations);
+            createStation(id,avgServiceTime,probs,destinations,i);
             numQueues += 1;
         }
         else {
@@ -199,6 +202,27 @@ void createGenerator(double P, int D) {
     free(total_time);
     free(new_arrival);
 }
+
+
+
+void createExit(int ID) {
+    struct node * new_exit = (node*)malloc(sizeof(struct node*));
+    new_exit->ID = ID;
+    new_exit->Next = exit_head->Next;
+    exit_head->Next = *new_exit;
+}
+
+station* stations[numQueues] = {NULL};
+void createStation(int ID, double P, double *probabilities, int *destinations,int i) {
+    station* new_station;
+    new_station->ID=ID;
+    new_station->P=P;
+    new_station->probabilities=probabilities;
+    new_station->destinations=destinations;
+    stations[i] = new_station;
+    }
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
