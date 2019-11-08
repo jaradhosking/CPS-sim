@@ -175,30 +175,29 @@ void readConfig(char *configFilename) {
 
 
 
-double arrival(double lambda){
+double rand_exp(double lambda){
     double mu;
-    mu = rand() / (RAND_MAX + 1.0);
-    return -loc(1 - mu) / lambda;
+    e = rand() / (RAND_MAX + 1.0);
+    return -log(1 - e) / lambda;
 }
 
-srand(time(NULL)+D);
+srand(time(NULL));
 int customerIDiterator = 0;
 void createGenerator(double P, int D) {
     double total_time = 0.0;
     double new_arrival;
     while (total_time <= EndTime){
         new_arrival = arrival(P);
-        
         new_event = struct EventData;
         new_event->EventType = ARRIVAL;
         new_event->componentID = D;
         new_event->customerID = customerIDiterator;
-        
         Schedule(new_arrival,*new_event);
-        
         customerIDiterator++;
         total_time = total_time + new_arrival;
     }
+    free(total_time);
+    free(new_arrival);
 }
 
 
