@@ -21,6 +21,7 @@
 
 
 double EndTime = -1;
+int numQueues = 0;
 
 // Event types
 #define	ARRIVAL     1
@@ -47,14 +48,8 @@ double EndTime = -1;
 
 struct EventData {
     int EventType;
-    int ID;
-};
-
-
-// Data structure for a node in a linked list
-struct node {
-    int ID;
-    struct node *Next;
+    int componentID;
+    int customerID;
 };
 
 
@@ -67,9 +62,29 @@ typedef struct station {
 } station;
 
 
+// Data structure which contains information about a customer in the system and points to the next customer
+struct customer {
+    int ID;
+    double *times;
+    struct customer *Next;
+};
+
+
+// Data structure for a node in a linked list
+struct node {
+    int ID;
+    struct node *Next;
+};
+
+
 // Exit Points List
 // Holds the int IDs of any exit points
 struct node exits = {-1, NULL};
+
+
+// In Queue List
+// Holds the number of people in each queue
+int *inQueue;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -78,8 +93,8 @@ struct node exits = {-1, NULL};
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 // prototypes for event handlers
-void Arrival (struct EventData *e);		// car arrival event
-void Departure (struct EventData *e);	// car departure event
+void Arrival (struct EventData *e);		// arrival event
+void Departure (struct EventData *e);	// departure event
 
 
 
@@ -146,6 +161,7 @@ void readConfig(char *configFilename) {
                 fscanf(ifp,"%lf %d",&probs[j],&destinations[j]);
             }
             createStation(id,avgServiceTime,probs,destinations);
+            numQueues += 1;
         }
         else {
             printf("Error: One of the component types is invalid.  Component types should be one of G, E, or "
@@ -153,6 +169,7 @@ void readConfig(char *configFilename) {
             exit(1);
         }
     }
+    int *inQueue = (int *)malloc(numQueues*sizeof(int));
 }
 
 
@@ -192,6 +209,10 @@ void EventHandler (void *data)
     else {fprintf (stderr, "Illegal event found\n"); exit(1); }
     free (d); // Release memory for event paramters
 }
+
+
+// event handler for arrival events
+
 
 
 
