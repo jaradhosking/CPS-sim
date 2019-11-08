@@ -79,11 +79,9 @@ struct node {
 
 // Exit Points List
 // Holds the int IDs of any exit points
-struct node* exit_head = (struct node*)malloc(sizeof(struct node*));
-struct node* exit_end = (struct node*)malloc(sizeof(struct node*));
-exit_head->ID=-1;
-exit_end->ID=NULL;
-exit_head->Next=*exit_end;
+struct node* exit_head;
+struct node* exit_end;
+
 
 // In Queue List
 // Holds the number of people in each queue
@@ -290,6 +288,11 @@ void Arrival (struct EventData *e)
 
 int main (void)
 {
+    exit_head = (struct node*)malloc(sizeof(struct node));
+    exit_end = (struct node*)malloc(sizeof(struct node));
+    exit_head->ID=-1;
+    exit_end->ID=-1;
+    exit_head->Next=exit_end;
     struct EventData *d;
     double ts;
 
