@@ -138,6 +138,7 @@ double rand_exp(double lambda);
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 void readConfig(char *configFilename) {
+    customers = (struct customerQueue *)malloc(sizeof(struct customerQueue));
     FILE *ifp = fopen(configFilename,"r");
     if (ifp==NULL) {
         printf("Error opening input file\n");
@@ -152,6 +153,7 @@ void readConfig(char *configFilename) {
                " the number of components in the queueing network.");
         exit(1);
     }
+    stations = (station *)malloc(numComponents*sizeof(station));
     for (int i = 0; i < numComponents; i++) {
         int id;
         char type[1];
@@ -161,7 +163,6 @@ void readConfig(char *configFilename) {
             int destination;
             fscanf(ifp,"%lf %d",&avgInterarrivalTime,&destination);
             createGenerator(avgInterarrivalTime,destination);
-            printf("here?\n");
         }
         else if (strcmp(type,"E") == 0) {
             createExit(id);
@@ -183,8 +184,6 @@ void readConfig(char *configFilename) {
             exit(1);
         }
     }
-    printf("here?\n");
-    stations = (station *)malloc(numComponents*sizeof(station));
 }
 
 
@@ -193,7 +192,7 @@ void readConfig(char *configFilename) {
 double rand_exp(double lambda){
     double u;
     u = rand() / (RAND_MAX + 1.0);
-    return -log(1 - u) / lambda;
+    return -log(1 - u) * lambda;
 }
 
 
@@ -204,6 +203,7 @@ void createGenerator(double P, int D) {
     while (total_time <= EndTime){
         new_arrival = rand_exp(P);
         total_time += new_arrival;
+        printf("%f %f %f\n",new_arrival,total_time,EndTime);
         if (total_time <= EndTime) {
             struct customer *new_customer = (struct customer *)malloc(sizeof(struct customer));
             struct EventData *new_event = (struct EventData *)malloc(sizeof(struct EventData));
@@ -215,8 +215,13 @@ void createGenerator(double P, int D) {
             new_event->componentID = D;
             new_event->customerPtr = new_customer;
             Schedule(total_time, new_event);
-            customers->last->Next = new_customer;
-            customers->last = new_customer;
+            if (customerIDiterator == 1) {
+                customers->first = new_customer;
+                customers->last = new_customer;
+            } else {
+                customers->last->Next = new_customer;
+                customers->last = new_customer;
+            }
         }
     }
 }
@@ -319,12 +324,12 @@ void Arrival (struct EventData *e)
     if (e->EventType != ARRIVAL) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
     if (curStation.isExit == 1) {
-        printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d",
+        printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d\n",
                 CurrentTime(), customerPtr->ID, componentID);
         customerPtr->exitTime = CurrentTime();
 
     } else if (curStation.isExit == 0) {
-        printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line",
+        printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line\n",
                 CurrentTime(), customerPtr->ID, componentID, ++(curStation.inQueue));
 
         customerPtr->queueArrivalTime = CurrentTime();
@@ -407,7 +412,7 @@ void Departure (struct EventData *e)
 //////////// MAIN PROGRAM
 ///////////////////////////////////////////////////////////////////////////////////////
 
-
+/*
 int main(int argc, char* argv[]) {
     srand(time(0));
     EndTime = strtof(argv[1], NULL);
@@ -417,5 +422,15 @@ int main(int argc, char* argv[]) {
     printf("finished reading\n");
     RunSim(EndTime);
     printf("finished all");
+    return(0);
+}
+ */
+int main(int argc, char* argv[]) {
+    srand(time(0));
+    EndTime = 50;
+    char *configFilename = "sampleConfig.txt";
+    char *outputFilename = "output.txt";
+    readConfig(configFilename);
+    RunSim(EndTime);
     return(0);
 }

@@ -9,4 +9,5 @@ add_executable(CPS-sim
         model.c
         engine.c
         README.md
-        sim.h)
+        sim.h
+        sampleConfig.txt)
