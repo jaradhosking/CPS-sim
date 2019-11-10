@@ -144,8 +144,8 @@ void readConfig(char *configFilename) {
         exit(1);
     }
     int numComponents;
-    char *numComponentsStr = NULL;
-    fscanf(ifp,"%s",numComponentsStr);
+    char numComponentsStr[100];
+    fscanf(ifp," %s ",numComponentsStr);
     numComponents = strtol(numComponentsStr,NULL,10);
     if (numComponents == 0) {
         printf("Error: the first line of the configuration file should be a positive integer value representing"
@@ -154,13 +154,14 @@ void readConfig(char *configFilename) {
     }
     for (int i = 0; i < numComponents; i++) {
         int id;
-        char *type = NULL;
+        char type[1];
         fscanf(ifp,"%d %s",&id,type);
         if (strcmp(type,"G") == 0) {
             double avgInterarrivalTime;
             int destination;
             fscanf(ifp,"%lf %d",&avgInterarrivalTime,&destination);
             createGenerator(avgInterarrivalTime,destination);
+            printf("here?\n");
         }
         else if (strcmp(type,"E") == 0) {
             createExit(id);
@@ -182,6 +183,7 @@ void readConfig(char *configFilename) {
             exit(1);
         }
     }
+    printf("here?\n");
     stations = (station *)malloc(numComponents*sizeof(station));
 }
 
@@ -217,8 +219,6 @@ void createGenerator(double P, int D) {
             customers->last = new_customer;
         }
     }
-    free(&total_time);
-    free(&new_arrival);
 }
 
 
@@ -407,16 +407,15 @@ void Departure (struct EventData *e)
 //////////// MAIN PROGRAM
 ///////////////////////////////////////////////////////////////////////////////////////
 
-int main (void)
-{
+
+int main(int argc, char* argv[]) {
     srand(time(0));
-    struct EventData *d;
-    double ts;
-
-    // initialize event list with first arrival
-    if ((d=malloc (sizeof(struct EventData))) == NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
-    ts = 10.0;
-    Schedule (ts, d);
-
-    RunSim(50.0);
+    EndTime = strtof(argv[1], NULL);
+    char *configFilename = argv[2];
+    char *outputFilename = argv[3];
+    readConfig(configFilename);
+    printf("finished reading\n");
+    RunSim(EndTime);
+    printf("finished all");
+    return(0);
 }
