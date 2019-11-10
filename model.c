@@ -51,7 +51,7 @@ int customerIDiterator = 0; // Number of customers in the system
 struct EventData {
     int EventType;
     int componentID;
-    int customerID;
+    struct customer *customerPtr;
 };
 
 
@@ -59,9 +59,9 @@ struct EventData {
 // Data structure which contains information about a customer in the system and points to the next customer
 struct customer {
     int ID;
-    double *times;
     double entryTime;
     double exitTime;
+    double queueArrivalTime;
     struct customer *Next;
 };
 
@@ -81,25 +81,22 @@ typedef struct station {
     int *destinations;
     int inQueue;
     struct customerQueue line;
+    double minWait;
+    double maxWait;
+    double avgWait;
+    int processedCustomers;
 } station;
 
-
-// Data structure for a node in a linked list
-struct node {
-    int ID;
-    struct node *Next;
-};
-
-
-// Exit Points List
-// Holds the int IDs of any exit points
-struct node* exit_head;
-struct node* exit_end;
 
 
 // Stations Array
 // Holds pointers to stations
 station* stations;
+
+
+// Customers linked list
+// Holds points to all customers in the system
+struct customerQueue *customers;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -206,12 +203,18 @@ void createGenerator(double P, int D) {
         new_arrival = rand_exp(P);
         total_time += new_arrival;
         if (total_time <= EndTime) {
+            struct customer *new_customer = (struct customer *)malloc(sizeof(struct customer));
             struct EventData *new_event = (struct EventData *)malloc(sizeof(struct EventData));
+            new_customer->entryTime = total_time;
+            new_customer->exitTime = -1;
+            new_customer->Next = NULL;
+            new_customer->ID = customerIDiterator++;
             new_event->EventType = ARRIVAL;
             new_event->componentID = D;
-            new_event->customerID = customerIDiterator;
+            new_event->customerPtr = new_customer;
             Schedule(total_time, new_event);
-            customerIDiterator++;
+            customers->last->Next = new_customer;
+            customers->last = new_customer;
         }
     }
     free(&total_time);
@@ -221,10 +224,6 @@ void createGenerator(double P, int D) {
 
 
 void createExit(int ID) {
-    //struct node * new_exit = (node*)malloc(sizeof(struct node*));
-    //new_exit->ID = ID;
-    //new_exit->Next = exit_head->Next;
-    //exit_head->Next = new_exit;
     station* new_station = (station *)malloc(sizeof(station));
     new_station->ID=ID;
     new_station->isExit=1;
@@ -237,6 +236,7 @@ void createExit(int ID) {
 
 
 void createStation(int ID, double P, double *probabilities, int *destinations) {
+    struct customerQueue *line = (struct customerQueue *)malloc(sizeof(struct customerQueue));
     station* new_station = (station *)malloc(sizeof(station));
     new_station->ID=ID;
     new_station->isExit=0;
@@ -244,6 +244,11 @@ void createStation(int ID, double P, double *probabilities, int *destinations) {
     new_station->probabilities=probabilities;
     new_station->destinations=destinations;
     new_station->inQueue=0;
+    new_station->line = *line;
+    new_station->maxWait = INFINITY;
+    new_station->minWait = 0;
+    new_station->avgWait = -1;
+    new_station->processedCustomers = 0;
     stations[ID] = *new_station;
 }
 
@@ -308,27 +313,36 @@ void Arrival (struct EventData *e)
     struct EventData *d;
     double ts;
     int componentID = e->componentID;
-    int customerID = e->customerID;
+    struct customer *customerPtr = e->customerPtr;
     station curStation = stations[componentID];
 
     if (e->EventType != ARRIVAL) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
     if (curStation.isExit == 1) {
         printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d",
-                CurrentTime(), customerID, componentID);
+                CurrentTime(), customerPtr->ID, componentID);
+        customerPtr->exitTime = CurrentTime();
+
     } else if (curStation.isExit == 0) {
         printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line",
-                CurrentTime(), customerID, componentID, ++(curStation.inQueue));
+                CurrentTime(), customerPtr->ID, componentID, ++(curStation.inQueue));
+
+        customerPtr->queueArrivalTime = CurrentTime();
 
         if (curStation.inQueue == 1) {
             // schedule next departure event
             if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
             d->EventType = DEPARTURE;
-            d->customerID = customerID;
-            int destinationID = randAssign(curStation.probabilities,curStation.destinations);
-            d->componentID = destinationID;
-            ts = CurrentTime() + rand_exp(curStation.P);
+            d->customerPtr = customerPtr;
+            d->componentID = componentID;
+            double serviceTime = rand_exp(curStation.P);
+            ts = CurrentTime() + serviceTime;
             Schedule(ts, d);
+            curStation.line.first = customerPtr;
+            curStation.line.last = customerPtr;
+        } else {
+            curStation.line.last->Next = customerPtr;
+            curStation.line.last = customerPtr;
         }
     }
 
@@ -344,19 +358,47 @@ void Departure (struct EventData *e)
     struct EventData *d;
     double ts;
     int componentID = e->componentID;
-    int customerID = e->customerID;
+    struct customer *customerPtr = e->customerPtr;
+    station curStation = stations[componentID];
+
 
     if (e->EventType != DEPARTURE) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
     printf ("Processing Departure event at time %f of customer %d in queue %d which now has %d in line",
-            CurrentTime(), customerID, componentID, --(stations[componentID].inQueue));
+            CurrentTime(), customerPtr->ID, componentID, --(curStation.inQueue));
 
 
-    // schedule next arrival event, here, 10 time units from now
+    // update stats
+    double customerQueueTime = CurrentTime() - customerPtr->queueArrivalTime;
+    curStation.maxWait = curStation.maxWait > customerQueueTime ? curStation.maxWait : customerQueueTime;
+    curStation.minWait = curStation.minWait < customerQueueTime ? curStation.minWait : customerQueueTime;
+    curStation.avgWait = ((curStation.avgWait * (double)curStation.processedCustomers++)+customerQueueTime) /
+            (double)curStation.processedCustomers;
+
+
+
+    // schedule arrival of customer leaving the queue
     if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
     d->EventType = ARRIVAL;
-    ts = CurrentTime() + rand_exp();
-    Schedule (ts, d);
+    d->customerPtr = customerPtr;
+    int destinationID = randAssign(curStation.probabilities,curStation.destinations);
+    d->componentID = destinationID;
+    Schedule(CurrentTime(), d);
+    curStation.line.first = curStation.line.first->Next;
+
+
+    // schedule departure of next customer in queue
+    if (curStation.inQueue >= 1) {
+        // schedule next departure event
+        if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
+        d->EventType = DEPARTURE;
+        d->customerPtr = curStation.line.first;
+        d->componentID = componentID;
+        double serviceTime = rand_exp(curStation.P);
+        ts = CurrentTime() + serviceTime;
+        Schedule(ts, d);
+    }
+
 }
 
 
@@ -368,11 +410,6 @@ void Departure (struct EventData *e)
 int main (void)
 {
     srand(time(0));
-    exit_head = (struct node*)malloc(sizeof(struct node));
-    exit_end = (struct node*)malloc(sizeof(struct node));
-    exit_head->ID=-1;
-    exit_end->ID=-1;
-    exit_head->Next=exit_end;
     struct EventData *d;
     double ts;
 
