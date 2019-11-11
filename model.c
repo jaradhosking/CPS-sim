@@ -318,19 +318,19 @@ void writeResults(char *outputFilename) {
     fprintf(ofp, "During the simulation, %d customers entered the system, and %d exited the system.\n",
             customerIDiterator, customersExited);
     if (customersExited <= 0) {
-        fprintf(ofp,"During the simulation, no customers exited the system, so there are no statistics for the "
-                "total amount of time customers spent in the system.\n");
+        fprintf(ofp,"During the simulation, no customers exited the system, so there are no\nstatistics for the"
+                " total amount of time customers spent in the system.\n");
     } else {
-        fprintf(ofp,"Among those who exited the system, customers averaged %f time units in the system, the "
-              "minimum time spent in the system was %f, and the maximum time spent was %f.\n",avgTime, minTime,
+        fprintf(ofp,"Among those who exited the system, customers averaged %f time units in the\nsystem, the "
+              "minimum time spent in the system was %f, and the maximum time\nspent was %f.\n",avgTime, minTime,
               maxTime);
     }
     if (customerIDiterator <= 0) {
         fprintf(ofp,"No customers entered the system, so other statistics on wait and queue times is"
                     "unavailable");
     } else {
-        fprintf(ofp, "The total amount of time customers spent waiting in queues averaged to %f, with the least "
-                     "time being %f, and the greatest being %f.\n",
+        fprintf(ofp, "The total amount of time customers spent waiting in queues averaged to %f,\nwith the "
+                     "least time being %f, and the greatest being %f.\n",
                 avgWaitTime, minWaitTime, maxWaitTime);
         for (int i = 0; i < numComponents; i++) {
             if (stations[i]->isExit == 0) {
