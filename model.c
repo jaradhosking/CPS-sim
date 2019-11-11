@@ -152,15 +152,15 @@ void readConfig(char *configFilename) {
     customers = (struct customerQueue *)malloc(sizeof(struct customerQueue));
     FILE *ifp = fopen(configFilename,"r");
     if (ifp==NULL) {
-        printf("Error opening input file\n");
+        fprintf(stderr,"Error opening input file\n");
         exit(1);
     }
     char numComponentsStr[100];
     fscanf(ifp,"%s",numComponentsStr);
     numComponents = strtol(numComponentsStr,NULL,10);
     if (numComponents == 0) {
-        printf("Error: the first line of the configuration file should be a positive integer value representing"
-               " the number of components in the queueing network.");
+        fprintf(stderr,"Error: the first line of the configuration file should be a positive integer value "
+               "representing the number of components in the queueing network.");
         exit(1);
     }
     stations = (station **)malloc(numComponents*sizeof(station));
@@ -196,8 +196,8 @@ void readConfig(char *configFilename) {
             createStation(id,avgServiceTime,probs,destinations);
         }
         else {
-            printf("Error: One of the component types is invalid.  Component types should be one of G, E, or "
-                   "Q, capitalized.");
+            fprintf(stderr,"Error: One of the component types is invalid.  Component types should be one of G, "
+                   "E, or Q, capitalized.");
             exit(1);
         }
     }
@@ -220,7 +220,6 @@ void createGenerator(double P, int D) {
     while (total_time <= EndTime){
         new_arrival = rand_exp(P);
         total_time += new_arrival;
-        //printf("%f %f %f\n",new_arrival,total_time,EndTime);
         if (total_time <= EndTime) {
             struct customer *new_customer = (struct customer *)malloc(sizeof(struct customer));
             struct EventData *new_event = (struct EventData *)malloc(sizeof(struct EventData));
@@ -303,7 +302,7 @@ void writeResults(char *outputFilename) {
     }
     FILE *ofp = fopen(outputFilename,"w");
     if (ofp==NULL) {
-        printf("Error opening output file\n");
+        fprintf(stderr,"Error opening output file\n");
         exit(1);
     }
     fprintf(ofp, "During the simulation, %d customers entered the system, and %d exited the system.\n",
@@ -443,13 +442,10 @@ void Departure (struct EventData *e)
 
     // update stats
     double customerQueueTime = CurrentTime() - customerPtr->queueArrivalTime - customerPtr->serviceTime;
-    printf("befffore %f %f %f\n",CurrentTime(),customerPtr->queueArrivalTime,customerPtr->serviceTime);
     curStation->maxWait = curStation->maxWait > customerQueueTime ? curStation->maxWait : customerQueueTime;
     curStation->minWait = curStation->minWait < customerQueueTime ? curStation->minWait : customerQueueTime;
-    printf("before %f %f %f\n",curStation->avgWait,curStation->processedCustomers,customerQueueTime);
     curStation->avgWait = ((curStation->avgWait * (double)curStation->processedCustomers)+customerQueueTime) /
             ((double)curStation->processedCustomers+1);
-    printf("after %f\n",curStation->avgWait);
     curStation->processedCustomers++;
 
 
