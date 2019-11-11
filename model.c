@@ -91,7 +91,7 @@ typedef struct station {
 
 // Stations Array
 // Holds pointers to stations
-station* stations;
+station** stations;
 
 
 // Customers linked list
@@ -239,7 +239,7 @@ void createExit(int ID) {
     new_station->probabilities=NULL;
     new_station->destinations=NULL;
     new_station->inQueue=-1;
-    stations[ID] = *new_station;
+    stations[ID] = new_station;
 }
 
 
@@ -257,7 +257,7 @@ void createStation(int ID, double P, double *probabilities, int *destinations) {
     new_station->minWait = 0;
     new_station->avgWait = -1;
     new_station->processedCustomers = 0;
-    stations[ID] = *new_station;
+    stations[ID] = new_station;
 }
 
 
@@ -308,11 +308,11 @@ void EventHandler (void *data)
     // coerce type so the compiler knows the type of information pointed to by the parameter data.
     d = (struct EventData *) data;
     // call an event handler based on the type of event
-    printf("check before %d size %d\n",stations[d->componentID].ID,stations[d->componentID].inQueue);
+    printf("check before %d size %d\n",stations[d->componentID]->ID,stations[d->componentID]->inQueue);
     if (d->EventType == ARRIVAL) Arrival (d);
     else if (d->EventType == DEPARTURE) Departure (d);
     else {fprintf (stderr, "Illegal event found\n"); exit(1); }
-    printf("check after %d size %d\n",stations[d->componentID].ID,stations[d->componentID].inQueue);
+    printf("check after %d size %d\n",stations[d->componentID]->ID,stations[d->componentID]->inQueue);
     free (d); // Release memory for event paramters
 }
 
@@ -324,38 +324,38 @@ void Arrival (struct EventData *e)
     double ts;
     int componentID = e->componentID;
     struct customer *customerPtr = e->customerPtr;
-    station curStation = stations[componentID];
+    station *curStation = stations[componentID];
 
     if (e->EventType != ARRIVAL) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
-    if (curStation.isExit == 1) {
+    if (curStation->isExit == 1) {
         printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d\n",
                 CurrentTime(), customerPtr->ID, componentID);
         customerPtr->exitTime = CurrentTime();
 
-    } else if (curStation.isExit == 0) {
+    } else if (curStation->isExit == 0) {
         printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line\n",
-                CurrentTime(), customerPtr->ID, componentID, ++(curStation.inQueue));
+                CurrentTime(), customerPtr->ID, componentID, ++(curStation->inQueue));
 
-        printf("check station %d size %d\n",curStation.ID,curStation.inQueue);
+        printf("check station %d size %d\n",curStation->ID,curStation->inQueue);
         customerPtr->queueArrivalTime = CurrentTime();
 
-        if (curStation.inQueue == 1) {
+        if (curStation->inQueue == 1) {
             // schedule next departure event
             if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
             d->EventType = DEPARTURE;
             d->customerPtr = customerPtr;
             d->componentID = componentID;
-            double serviceTime = rand_exp(curStation.P);
+            double serviceTime = rand_exp(curStation->P);
             ts = CurrentTime() + serviceTime;
             Schedule(ts, d);
-            curStation.line.first = customerPtr;
-            curStation.line.last = customerPtr;
+            curStation->line.first = customerPtr;
+            curStation->line.last = customerPtr;
         } else {
-            curStation.line.last->Next = customerPtr;
-            curStation.line.last = customerPtr;
+            curStation->line.last->Next = customerPtr;
+            curStation->line.last = customerPtr;
         }
-        printf("check station %d size %d\n",curStation.ID,curStation.inQueue);
+        printf("check station %d size %d\n",curStation->ID,curStation->inQueue);
     }
 
 
@@ -371,21 +371,21 @@ void Departure (struct EventData *e)
     double ts;
     int componentID = e->componentID;
     struct customer *customerPtr = e->customerPtr;
-    station curStation = stations[componentID];
+    station *curStation = stations[componentID];
 
-    printf("check station %d size %d\n",curStation.ID,curStation.inQueue);
+    printf("check station %d size %d\n",curStation->ID,curStation->inQueue);
     if (e->EventType != DEPARTURE) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
     printf ("Processing Departure event at time %f of customer %d in queue %d which now has %d in line\n",
-            CurrentTime(), customerPtr->ID, componentID, --(curStation.inQueue));
+            CurrentTime(), customerPtr->ID, componentID, --(curStation->inQueue));
 
 
     // update stats
     double customerQueueTime = CurrentTime() - customerPtr->queueArrivalTime;
-    curStation.maxWait = curStation.maxWait > customerQueueTime ? curStation.maxWait : customerQueueTime;
-    curStation.minWait = curStation.minWait < customerQueueTime ? curStation.minWait : customerQueueTime;
-    curStation.avgWait = ((curStation.avgWait * (double)curStation.processedCustomers++)+customerQueueTime) /
-            (double)curStation.processedCustomers;
+    curStation->maxWait = curStation->maxWait > customerQueueTime ? curStation->maxWait : customerQueueTime;
+    curStation->minWait = curStation->minWait < customerQueueTime ? curStation->minWait : customerQueueTime;
+    curStation->avgWait = ((curStation->avgWait * (double)curStation->processedCustomers++)+customerQueueTime) /
+            (double)curStation->processedCustomers;
 
 
 
@@ -393,20 +393,20 @@ void Departure (struct EventData *e)
     if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
     d->EventType = ARRIVAL;
     d->customerPtr = customerPtr;
-    int destinationID = randAssign(curStation.probabilities,curStation.destinations);
+    int destinationID = randAssign(curStation->probabilities,curStation->destinations);
     d->componentID = destinationID;
     Schedule(CurrentTime(), d);
-    curStation.line.first = curStation.line.first->Next;
+    curStation->line.first = curStation->line.first->Next;
 
 
     // schedule departure of next customer in queue
-    if (curStation.inQueue >= 1) {
+    if (curStation->inQueue >= 1) {
         // schedule next departure event
         if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
         d->EventType = DEPARTURE;
-        d->customerPtr = curStation.line.first;
+        d->customerPtr = curStation->line.first;
         d->componentID = componentID;
-        double serviceTime = rand_exp(curStation.P);
+        double serviceTime = rand_exp(curStation->P);
         ts = CurrentTime() + serviceTime;
         Schedule(ts, d);
     }
