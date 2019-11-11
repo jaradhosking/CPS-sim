@@ -325,7 +325,8 @@ void writeResults(char *outputFilename) {
                 avgWaitTime, minWaitTime, maxWaitTime);
         for (int i = 0; i < numComponents; i++) {
             if (stations[i]->isExit == 0) {
-                fprintf(ofp,"For queue with ID %d, the average waiting time is %f.\n", i, stations[i]->avgWait);
+                fprintf(ofp,"For queue with ID %d, the average waiting time is %f.\n", i, stations[i]->avgWait >
+                0 ? stations[i]->avgWait : 0);
             }
         }
     }
@@ -484,19 +485,18 @@ void Departure (struct EventData *e)
 //////////// MAIN PROGRAM
 ///////////////////////////////////////////////////////////////////////////////////////
 
-/*
+
 int main(int argc, char* argv[]) {
     srand(time(0));
     EndTime = strtof(argv[1], NULL);
     char *configFilename = argv[2];
     char *outputFilename = argv[3];
     readConfig(configFilename);
-    printf("finished reading\n");
     RunSim(EndTime);
-    printf("finished all");
+    writeResults(outputFilename);
     return(0);
 }
- */
+ /*
 int main(int argc, char* argv[]) {
     srand(time(0));
     EndTime = 50;
@@ -506,4 +506,4 @@ int main(int argc, char* argv[]) {
     RunSim(EndTime);
     writeResults(outputFilename);
     return(0);
-}
+}*/
