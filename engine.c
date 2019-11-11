@@ -141,11 +141,15 @@ void RunSim (double EndTime)
 
     // Main scheduler loop
     while ((e=Remove()) != NULL) {
+
         Now = e->timestamp;
+        printf("check %f %f\n",Now,EndTime);
         if (Now > EndTime) break;
         EventHandler(e->AppData);
         free (e);	// it is up to the event handler to free memory for parameters
         PrintList ();
+        printf("check 1\n");
     }
+    printf("check 2\n");
 }
 

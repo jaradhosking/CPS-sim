@@ -236,11 +236,11 @@ void createGenerator(double P, int D) {
             new_customer->entryTime = total_time;
             new_customer->exitTime = -1;
             new_customer->Next = NULL;
-            new_customer->ID = customerIDiterator++;
+            new_customer->ID = ++customerIDiterator;
             new_customer->waitingTime = 0;
+            new_customer->serviceTime = 0;
             new_event->EventType = ARRIVAL;
             new_event->componentID = D;
-            new_customer->serviceTime = 0;
             new_event->customerPtr = new_customer;
             Schedule(total_time, new_event);
             if (customerIDiterator == 1) {
@@ -280,17 +280,19 @@ void createStation(int ID, double P, double *probabilities, int *destinations) {
     new_station->line = line;
     new_station->maxWait = 0;
     new_station->minWait = INFINITY;
-    new_station->avgWait = 0;
+    new_station->avgWait = -1;
     new_station->processedCustomers = 0;
     stations[ID] = new_station;
 }
 
 
 int randAssign(double *probabilities, int *destinations) {
-    double P = rand() / RAND_MAX;
+    double P = rand() / (double)RAND_MAX;
     double curProb = 0;
     int i = 0;
+    printf("P is %f\n",P);
     while (curProb <= 1) {
+        printf("curProb is %f during i %d\n",curProb,i);
         curProb += probabilities[i];
         if (P <= curProb) {
             return destinations[i];
@@ -303,20 +305,27 @@ int randAssign(double *probabilities, int *destinations) {
 
 
 void writeResults(char *outputFilename) {
+    printf("check 4");
     struct customer *customerPtr = customers->first;
-    while (customerPtr->Next != NULL) {
+    printf("check 5");
+    while (customerPtr != NULL) {
+        printf("ID %d of %d\n",customerPtr->ID,customerIDiterator);
         maxWaitTime = maxWaitTime > customerPtr->waitingTime ? maxWaitTime : customerPtr->waitingTime;
         minWaitTime = minWaitTime < customerPtr->waitingTime ? minWaitTime : customerPtr->waitingTime;
         avgWaitTime = ((avgWaitTime * (double)customersExited)+customerPtr->waitingTime) / ((double)customersExited+1);
         customerPtr = customerPtr->Next;
     }
+    printf("check 6");
     FILE *ofp = fopen(outputFilename,"w");
+    printf("check 7");
     if (ofp==NULL) {
         fprintf(stderr,"Error opening output file\n");
         exit(1);
     }
+    printf("check 8");
     fprintf(ofp, "During the simulation, %d customers entered the system, and %d exited the system.\n",
             customerIDiterator, customersExited);
+    printf("check 9");
     if (customersExited <= 0) {
         fprintf(ofp,"During the simulation, no customers exited the system, so there are no\nstatistics for the"
                 " total amount of time customers spent in the system.\n");
@@ -325,19 +334,27 @@ void writeResults(char *outputFilename) {
               "minimum time spent in the system was %f, and the maximum time\nspent was %f.\n",avgTime, minTime,
               maxTime);
     }
+    printf("check 10");
     if (customerIDiterator <= 0) {
         fprintf(ofp,"No customers entered the system, so other statistics on wait and queue times is"
                     "unavailable");
     } else {
+        printf("check 11");
         fprintf(ofp, "The total amount of time customers spent waiting in queues averaged to %f,\nwith the "
                      "least time being %f, and the greatest being %f.\n",
                 avgWaitTime, minWaitTime, maxWaitTime);
+        printf("check 12");
         for (int i = 0; i < numComponents; i++) {
             if (stations[i]->isExit == 0) {
-                fprintf(ofp,"For queue with ID %d, the average waiting time is %f.\n", i, stations[i]->avgWait >
-                0 ? stations[i]->avgWait : 0);
+                if (stations[i]->avgWait == -1) {
+                    fprintf(ofp,"For queue with ID %d, no one came to this queue!\n", i);
+                } else {
+                    fprintf(ofp,"For queue with ID %d, the average waiting time is %f.\n", i,
+                            stations[i]->avgWait > 0 ? stations[i]->avgWait : 0);
+                }
             }
         }
+        printf("check 13");
     }
 
 
@@ -366,7 +383,6 @@ void EventHandler (void *data)
     if (d->EventType == ARRIVAL) Arrival (d);
     else if (d->EventType == DEPARTURE) Departure (d);
     else {fprintf (stderr, "Illegal event found\n"); exit(1); }
-    free (d); // Release memory for event paramters
 }
 
 
@@ -479,7 +495,7 @@ void Departure (struct EventData *e)
 //////////// MAIN PROGRAM
 ///////////////////////////////////////////////////////////////////////////////////////
 
-
+/*
 int main(int argc, char* argv[]) {
     srand(time(0));
     EndTime = strtof(argv[1], NULL);
@@ -487,17 +503,18 @@ int main(int argc, char* argv[]) {
     char *outputFilename = argv[3];
     readConfig(configFilename);
     RunSim(EndTime);
+    printf("check 3");
     writeResults(outputFilename);
     return(0);
 }
- /*
+ */
 int main(int argc, char* argv[]) {
     srand(time(0));
-    EndTime = 50;
-    char *configFilename = "sampleConfig.txt";
+    EndTime = 40;
+    char *configFilename = "config.txt";
     char *outputFilename = "output.txt";
     readConfig(configFilename);
     RunSim(EndTime);
     writeResults(outputFilename);
     return(0);
-}*/
+}
