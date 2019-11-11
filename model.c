@@ -146,7 +146,7 @@ void readConfig(char *configFilename) {
     }
     int numComponents;
     char numComponentsStr[100];
-    fscanf(ifp," %s ",numComponentsStr);
+    fscanf(ifp,"%s",numComponentsStr);
     numComponents = strtol(numComponentsStr,NULL,10);
     if (numComponents == 0) {
         printf("Error: the first line of the configuration file should be a positive integer value representing"
@@ -156,7 +156,7 @@ void readConfig(char *configFilename) {
     stations = (station *)malloc(numComponents*sizeof(station));
     for (int i = 0; i < numComponents; i++) {
         int id;
-        char type[1];
+        char *type = (char *)malloc(sizeof(char));
         fscanf(ifp,"%d %s",&id,type);
         if (strcmp(type,"G") == 0) {
             double avgInterarrivalTime;
@@ -174,7 +174,10 @@ void readConfig(char *configFilename) {
             int *destinations = (int *)malloc(numRoutes*sizeof(int));
             double *probs = (double *)malloc(numRoutes*sizeof(double));
             for (int j = 0; j < numRoutes; j++) {
-                fscanf(ifp,"%lf %d",&probs[j],&destinations[j]);
+                fscanf(ifp,"%lf",&probs[j]);
+            }
+            for (int j = 0; j < numRoutes; j++) {
+                fscanf(ifp,"%d",&destinations[j]);
             }
             createStation(id,avgServiceTime,probs,destinations);
         }
@@ -203,7 +206,7 @@ void createGenerator(double P, int D) {
     while (total_time <= EndTime){
         new_arrival = rand_exp(P);
         total_time += new_arrival;
-        printf("%f %f %f\n",new_arrival,total_time,EndTime);
+        //printf("%f %f %f\n",new_arrival,total_time,EndTime);
         if (total_time <= EndTime) {
             struct customer *new_customer = (struct customer *)malloc(sizeof(struct customer));
             struct EventData *new_event = (struct EventData *)malloc(sizeof(struct EventData));
@@ -305,9 +308,11 @@ void EventHandler (void *data)
     // coerce type so the compiler knows the type of information pointed to by the parameter data.
     d = (struct EventData *) data;
     // call an event handler based on the type of event
+    printf("check before %d size %d\n",stations[d->componentID].ID,stations[d->componentID].inQueue);
     if (d->EventType == ARRIVAL) Arrival (d);
     else if (d->EventType == DEPARTURE) Departure (d);
     else {fprintf (stderr, "Illegal event found\n"); exit(1); }
+    printf("check after %d size %d\n",stations[d->componentID].ID,stations[d->componentID].inQueue);
     free (d); // Release memory for event paramters
 }
 
@@ -332,6 +337,7 @@ void Arrival (struct EventData *e)
         printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line\n",
                 CurrentTime(), customerPtr->ID, componentID, ++(curStation.inQueue));
 
+        printf("check station %d size %d\n",curStation.ID,curStation.inQueue);
         customerPtr->queueArrivalTime = CurrentTime();
 
         if (curStation.inQueue == 1) {
@@ -349,6 +355,7 @@ void Arrival (struct EventData *e)
             curStation.line.last->Next = customerPtr;
             curStation.line.last = customerPtr;
         }
+        printf("check station %d size %d\n",curStation.ID,curStation.inQueue);
     }
 
 
@@ -366,10 +373,10 @@ void Departure (struct EventData *e)
     struct customer *customerPtr = e->customerPtr;
     station curStation = stations[componentID];
 
-
+    printf("check station %d size %d\n",curStation.ID,curStation.inQueue);
     if (e->EventType != DEPARTURE) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
-    printf ("Processing Departure event at time %f of customer %d in queue %d which now has %d in line",
+    printf ("Processing Departure event at time %f of customer %d in queue %d which now has %d in line\n",
             CurrentTime(), customerPtr->ID, componentID, --(curStation.inQueue));
 
 
