@@ -481,13 +481,13 @@ void Departure (struct EventData *e)
 
 
 int main(int argc, char* argv[]) {
+    customers = (struct customerQueue *)malloc(sizeof(struct customerQueue));
     srand(time(0));
     EndTime = strtof(argv[1], NULL);
     char *configFilename = argv[2];
     char *outputFilename = argv[3];
     readConfig(configFilename);
     RunSim(EndTime);
-    printf("check 3");
     writeResults(outputFilename);
     return(0);
 }
