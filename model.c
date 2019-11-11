@@ -24,6 +24,15 @@ double EndTime = -1;
 
 
 int customerIDiterator = 0; // Number of customers in the system
+int customersExited = 0; // Number of customers which have left the system
+double minTime = INFINITY;
+double maxTime = 0;
+double avgTime = 0;
+double minWaitTime = INFINITY;
+double maxWaitTime = 0;
+double avgWaitTime = 0;
+int numComponents;
+
 
 // Event types
 #define	ARRIVAL     1
@@ -62,6 +71,8 @@ struct customer {
     double entryTime;
     double exitTime;
     double queueArrivalTime;
+    double waitingTime;
+    double serviceTime;
     struct customer *Next;
 };
 
@@ -144,7 +155,6 @@ void readConfig(char *configFilename) {
         printf("Error opening input file\n");
         exit(1);
     }
-    int numComponents;
     char numComponentsStr[100];
     fscanf(ifp,"%s",numComponentsStr);
     numComponents = strtol(numComponentsStr,NULL,10);
@@ -159,6 +169,10 @@ void readConfig(char *configFilename) {
         char *type = (char *)malloc(sizeof(char));
         fscanf(ifp,"%d %s",&id,type);
         if (strcmp(type,"G") == 0) {
+            station* new_station = (station *)malloc(sizeof(station));
+            new_station->ID=id;
+            new_station->isExit=1;
+            stations[id] = new_station;
             double avgInterarrivalTime;
             int destination;
             fscanf(ifp,"%lf %d",&avgInterarrivalTime,&destination);
@@ -214,6 +228,7 @@ void createGenerator(double P, int D) {
             new_customer->exitTime = -1;
             new_customer->Next = NULL;
             new_customer->ID = customerIDiterator++;
+            new_customer->waitingTime = 0;
             new_event->EventType = ARRIVAL;
             new_event->componentID = D;
             new_event->customerPtr = new_customer;
@@ -253,8 +268,8 @@ void createStation(int ID, double P, double *probabilities, int *destinations) {
     new_station->destinations=destinations;
     new_station->inQueue=0;
     new_station->line = line;
-    new_station->maxWait = INFINITY;
-    new_station->minWait = 0;
+    new_station->maxWait = 0;
+    new_station->minWait = INFINITY;
     new_station->avgWait = -1;
     new_station->processedCustomers = 0;
     stations[ID] = new_station;
@@ -276,6 +291,32 @@ int randAssign(double *probabilities, int *destinations) {
     exit(1);
 }
 
+
+void writeResults(char *outputFilename) {
+    struct customer *customerPtr = customers->first;
+    while (customerPtr->Next != NULL) {
+        maxWaitTime = maxWaitTime > customerPtr->waitingTime ? maxWaitTime : customerPtr->waitingTime;
+        minWaitTime = minWaitTime < customerPtr->waitingTime ? minWaitTime : customerPtr->waitingTime;
+        avgWaitTime = ((avgWaitTime * (double)customersExited)+customerPtr->waitingTime) / ((double)customersExited+1);
+        customerPtr = customerPtr->Next;
+    }
+    FILE *ofp = fopen(outputFilename,"w");
+    if (ofp==NULL) {
+        printf("Error opening output file\n");
+        exit(1);
+    }
+    fprintf(ofp,"During the simulation, %d customers entered the system, and %d exited the system.\n Among "
+                "those who exited the system, customers averaged %f time units in the system, the minimum time spent "
+                "in the system was %f, and the maximum time spent was %f.\n The total amount of time customers spent "
+                "waiting in queues averaged to %f, with the least wait time being %f, and the greatest being %f.\n",
+                customerIDiterator, customersExited, avgTime, maxTime, minTime, avgWaitTime, minWaitTime, maxWaitTime);
+    for (int i = 0; i < numComponents; i++) {
+        if (stations[i]->isExit == 0) {
+            fprintf(ofp,"For queue with ID %d, the average waiting time is %f.\n", i, stations[i]->avgWait);
+        }
+    }
+    fclose(ofp);
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -330,6 +371,14 @@ void Arrival (struct EventData *e)
         printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d\n",
                 CurrentTime(), customerPtr->ID, componentID);
         customerPtr->exitTime = CurrentTime();
+        customersExited++;
+
+        // update stats
+        double customerSystemTime = customerPtr->exitTime - customerPtr->entryTime;
+        maxTime = maxTime > customerSystemTime ? maxTime : customerSystemTime;
+        minTime = minTime < customerSystemTime ? minTime : customerSystemTime;
+        avgTime = ((avgTime * (double)customersExited)+customerSystemTime) / ((double)customersExited+1);
+        customersExited += 1;
 
     } else if (curStation->isExit == 0) {
         printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line\n",
@@ -376,7 +425,7 @@ void Departure (struct EventData *e)
 
 
     // update stats
-    double customerQueueTime = CurrentTime() - customerPtr->queueArrivalTime;
+    double customerQueueTime = CurrentTime() - customerPtr->queueArrivalTime - customerPtr->serviceTime;
     curStation->maxWait = curStation->maxWait > customerQueueTime ? curStation->maxWait : customerQueueTime;
     curStation->minWait = curStation->minWait < customerQueueTime ? curStation->minWait : customerQueueTime;
     curStation->avgWait = ((curStation->avgWait * (double)curStation->processedCustomers++)+customerQueueTime) /
@@ -402,8 +451,10 @@ void Departure (struct EventData *e)
         d->customerPtr = curStation->line->first;
         d->componentID = componentID;
         double serviceTime = rand_exp(curStation->P);
+        d->customerPtr->serviceTime = serviceTime;
         ts = CurrentTime() + serviceTime;
         Schedule(ts, d);
+        curStation->line->first->waitingTime += CurrentTime() - curStation->line->first->queueArrivalTime;
     }
 
 }
@@ -434,5 +485,6 @@ int main(int argc, char* argv[]) {
     char *outputFilename = "output.txt";
     readConfig(configFilename);
     RunSim(EndTime);
+    writeResults(outputFilename);
     return(0);
 }
