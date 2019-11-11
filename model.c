@@ -73,7 +73,8 @@ struct customer {
     double queueArrivalTime;
     double waitingTime;
     double serviceTime;
-    struct customer *Next;
+    struct customer *Next; //next in line
+    struct customer *NextAll; //next customer that exists overall
 };
 
 
@@ -154,7 +155,6 @@ double urand();
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 void readConfig(char *configFilename) {
-    customers = (struct customerQueue *)malloc(sizeof(struct customerQueue));
     FILE *ifp = fopen(configFilename,"r");
     if (ifp==NULL) {
         fprintf(stderr,"Error opening input file\n");
@@ -219,7 +219,7 @@ double randexp(double lambda){
 
 // Returns a random number corresponding to the uniform distribution on the interval [0,1)
 double urand(){
-    return rand() / (RAND_MAX + 1.0);
+    return rand() / (double)(RAND_MAX + 1.0);
 }
 
 
@@ -247,7 +247,7 @@ void createGenerator(double P, int D) {
                 customers->first = new_customer;
                 customers->last = new_customer;
             } else {
-                customers->last->Next = new_customer;
+                customers->last->NextAll = new_customer;
                 customers->last = new_customer;
             }
         }
@@ -290,9 +290,7 @@ int randAssign(double *probabilities, int *destinations) {
     double P = rand() / (double)RAND_MAX;
     double curProb = 0;
     int i = 0;
-    printf("P is %f\n",P);
     while (curProb <= 1) {
-        printf("curProb is %f during i %d\n",curProb,i);
         curProb += probabilities[i];
         if (P <= curProb) {
             return destinations[i];
@@ -305,27 +303,22 @@ int randAssign(double *probabilities, int *destinations) {
 
 
 void writeResults(char *outputFilename) {
-    printf("check 4");
     struct customer *customerPtr = customers->first;
-    printf("check 5");
+    int i = 0;
     while (customerPtr != NULL) {
-        printf("ID %d of %d\n",customerPtr->ID,customerIDiterator);
         maxWaitTime = maxWaitTime > customerPtr->waitingTime ? maxWaitTime : customerPtr->waitingTime;
         minWaitTime = minWaitTime < customerPtr->waitingTime ? minWaitTime : customerPtr->waitingTime;
-        avgWaitTime = ((avgWaitTime * (double)customersExited)+customerPtr->waitingTime) / ((double)customersExited+1);
-        customerPtr = customerPtr->Next;
+        avgWaitTime = ((avgWaitTime * (double)i)+customerPtr->waitingTime) / ((double)i+1);
+        customerPtr = customerPtr->NextAll;
+        i++;
     }
-    printf("check 6");
     FILE *ofp = fopen(outputFilename,"w");
-    printf("check 7");
     if (ofp==NULL) {
         fprintf(stderr,"Error opening output file\n");
         exit(1);
     }
-    printf("check 8");
     fprintf(ofp, "During the simulation, %d customers entered the system, and %d exited the system.\n",
             customerIDiterator, customersExited);
-    printf("check 9");
     if (customersExited <= 0) {
         fprintf(ofp,"During the simulation, no customers exited the system, so there are no\nstatistics for the"
                 " total amount of time customers spent in the system.\n");
@@ -334,16 +327,13 @@ void writeResults(char *outputFilename) {
               "minimum time spent in the system was %f, and the maximum time\nspent was %f.\n",avgTime, minTime,
               maxTime);
     }
-    printf("check 10");
     if (customerIDiterator <= 0) {
         fprintf(ofp,"No customers entered the system, so other statistics on wait and queue times is"
                     "unavailable");
     } else {
-        printf("check 11");
         fprintf(ofp, "The total amount of time customers spent waiting in queues averaged to %f,\nwith the "
                      "least time being %f, and the greatest being %f.\n",
                 avgWaitTime, minWaitTime, maxWaitTime);
-        printf("check 12");
         for (int i = 0; i < numComponents; i++) {
             if (stations[i]->isExit == 0) {
                 if (stations[i]->avgWait == -1) {
@@ -354,7 +344,6 @@ void writeResults(char *outputFilename) {
                 }
             }
         }
-        printf("check 13");
     }
 
 
@@ -376,13 +365,13 @@ void writeResults(char *outputFilename) {
 void EventHandler (void *data)
 {
     struct EventData *d;
-
     // coerce type so the compiler knows the type of information pointed to by the parameter data.
     d = (struct EventData *) data;
     // call an event handler based on the type of event
     if (d->EventType == ARRIVAL) Arrival (d);
     else if (d->EventType == DEPARTURE) Departure (d);
     else {fprintf (stderr, "Illegal event found\n"); exit(1); }
+    free(d);
 }
 
 
@@ -394,12 +383,11 @@ void Arrival (struct EventData *e)
     int componentID = e->componentID;
     struct customer *customerPtr = e->customerPtr;
     station *curStation = stations[componentID];
-
     if (e->EventType != ARRIVAL) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
     if (curStation->isExit == 1) {
-        printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d\n",
-                CurrentTime(), customerPtr->ID, componentID);
+        //printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d\n",
+                //CurrentTime(), customerPtr->ID, componentID);
         customerPtr->exitTime = CurrentTime();
 
         // update stats
@@ -410,11 +398,10 @@ void Arrival (struct EventData *e)
         customersExited += 1;
 
     } else if (curStation->isExit == 0) {
-        printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line\n",
-                CurrentTime(), customerPtr->ID, componentID, ++(curStation->inQueue));
-
+        //printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line\n",
+                //CurrentTime(), customerPtr->ID, componentID, ++(curStation->inQueue));
+        curStation->inQueue++;
         customerPtr->queueArrivalTime = CurrentTime();
-
         if (curStation->inQueue == 1) {
             // schedule next departure event
             if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
@@ -432,9 +419,6 @@ void Arrival (struct EventData *e)
             curStation->line->last = customerPtr;
         }
     }
-
-
-
 }
 
 
@@ -450,9 +434,9 @@ void Departure (struct EventData *e)
 
     if (e->EventType != DEPARTURE) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
-    printf ("Processing Departure event at time %f of customer %d in queue %d which now has %d in line\n",
-            CurrentTime(), customerPtr->ID, componentID, --(curStation->inQueue));
-
+    //printf ("Processing Departure event at time %f of customer %d in queue %d which now has %d in line\n",
+            //CurrentTime(), customerPtr->ID, componentID, --(curStation->inQueue));
+    curStation->inQueue--;
 
     // update stats
     double customerQueueTime = CurrentTime() - customerPtr->queueArrivalTime - customerPtr->serviceTime;
@@ -495,7 +479,7 @@ void Departure (struct EventData *e)
 //////////// MAIN PROGRAM
 ///////////////////////////////////////////////////////////////////////////////////////
 
-/*
+
 int main(int argc, char* argv[]) {
     srand(time(0));
     EndTime = strtof(argv[1], NULL);
@@ -507,14 +491,15 @@ int main(int argc, char* argv[]) {
     writeResults(outputFilename);
     return(0);
 }
- */
+ /*
 int main(int argc, char* argv[]) {
+    customers = (struct customerQueue *)malloc(sizeof(struct customerQueue));
     srand(time(0));
-    EndTime = 40;
+    EndTime = 240;
     char *configFilename = "config.txt";
-    char *outputFilename = "output.txt";
+    char *outputFilename = "output16-1.txt";
     readConfig(configFilename);
     RunSim(EndTime);
     writeResults(outputFilename);
     return(0);
-}
+}*/

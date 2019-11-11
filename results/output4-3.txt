@@ -1,0 +1,16 @@
+During the simulation, 930 customers entered the system, and 349 exited the system.
+Among those who exited the system, customers averaged 71.294255 time units in the
+system, the minimum time spent in the system was 1.528278, and the maximum time
+spent was 178.021719.
+The total amount of time customers spent waiting in queues averaged to 27.209779,
+with the least time being 0.000000, and the greatest being 172.885219.
+For queue with ID 1, the average waiting time is 0.052468.
+For queue with ID 2, the average waiting time is 70.284828.
+For queue with ID 3, the average waiting time is 68.417659.
+For queue with ID 4, the average waiting time is 45.153678.
+For queue with ID 5, the average waiting time is 74.962738.
+For queue with ID 6, the average waiting time is 0.365806.
+For queue with ID 7, the average waiting time is 0.561325.
+For queue with ID 8, the average waiting time is 1.359024.
+For queue with ID 9, the average waiting time is 1.025875.
+For queue with ID 10, the average waiting time is 0.761407.
