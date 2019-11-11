@@ -140,7 +140,12 @@ void createStation(int ID, double P, double *probabilities, int *destinations);
 void writeResults(char *outputFilename);
 
 // Returns a random number corresponding to the exponential distribution with parameter lambda
-double rand_exp(double lambda);
+double randexp(double lambda);
+
+// Returns a random number corresponding to the uniform distribution on the interval [0,1)
+double urand();
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -206,10 +211,15 @@ void readConfig(char *configFilename) {
 
 
 
-double rand_exp(double lambda){
-    double u;
-    u = rand() / (RAND_MAX + 1.0);
+double randexp(double lambda){
+    double u = urand();
     return -log(1 - u) * lambda;
+}
+
+
+// Returns a random number corresponding to the uniform distribution on the interval [0,1)
+double urand(){
+    return rand() / (RAND_MAX + 1.0);
 }
 
 
@@ -218,7 +228,7 @@ void createGenerator(double P, int D) {
     double total_time = 0.0;
     double new_arrival;
     while (total_time <= EndTime){
-        new_arrival = rand_exp(P);
+        new_arrival = randexp(P);
         total_time += new_arrival;
         if (total_time <= EndTime) {
             struct customer *new_customer = (struct customer *)malloc(sizeof(struct customer));
@@ -395,7 +405,7 @@ void Arrival (struct EventData *e)
             d->EventType = DEPARTURE;
             d->customerPtr = customerPtr;
             d->componentID = componentID;
-            double serviceTime = rand_exp(curStation->P);
+            double serviceTime = randexp(curStation->P);
             d->customerPtr->serviceTime = serviceTime;
             ts = CurrentTime() + serviceTime;
             Schedule(ts, d);
@@ -454,7 +464,7 @@ void Departure (struct EventData *e)
         d->EventType = DEPARTURE;
         d->customerPtr = curStation->line->first;
         d->componentID = componentID;
-        double serviceTime = rand_exp(curStation->P);
+        double serviceTime = randexp(curStation->P);
         d->customerPtr->serviceTime = serviceTime;
         ts = CurrentTime() + serviceTime;
         Schedule(ts, d);
