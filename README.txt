@@ -1,4 +1,4 @@
-Authors		: Jarad Hosking & Cullen Stockmeyer
+Authors		: Jarad Hosking & Cullen Stockmeyer & Richard Fujimoto
 Created		: October 21, 2019
 Last Modified	: November 11, 2019
 

@@ -7,8 +7,8 @@
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
-// One Pump Gas Station Simulation
-// Arriving vehicles use the gas pump; queue if pump being used
+// CPSSim
+// Authors: Jarad Hosking & Cullen Stockmeyer & Richard Fujimoto
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -342,19 +342,7 @@ void writeResults(char *outputFilename) {
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Note the strategy used for dynamic memory allocation. The simulation application is responsible
-// for freeing any memory it allocates, and is ONLY responsible for freeing memory allocated
-// within the simulation application (i.e., it is NOT responsioble for freeing memory allocated
-// within the simulation engine). Here, the simulation dynamically allocates memory
-// for the PARAMETERS of each event. Whenever a new event is scheduled, memory for the event's paramters
-// is allocated using malloc. This storage is released within the event handler when it is done
-// processing the event.
-// Because we know each event is scheduled exactly once, and is processed exactly once, we know that
-// memory dynamically allocated for each event'a parameters will be released exactly once.
-// Note that within the simulation engine memory is also dynamically allocated and released. That memory
-// is different from the memory allocated here, and the simulation application is not concerned with
-// memory allocated in the simulation engine.
-//
+
 
 // General Event Handler Procedure define in simulation engine interface
 // This function is called by the simulation engine to process an event removed from the future event list
@@ -369,6 +357,7 @@ void EventHandler (void *data)
     else if (d->EventType == DEPARTURE) Departure (d);
     else {fprintf (stderr, "Illegal event found\n"); exit(1); }
     free (d); // Release memory for event paramters
+    free(data);
 }
 
 
