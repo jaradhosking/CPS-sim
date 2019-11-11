@@ -8,6 +8,5 @@ include_directories(.)
 add_executable(CPS-sim
         model.c
         engine.c
-        README.md
         sim.h
         sampleConfig.txt)
