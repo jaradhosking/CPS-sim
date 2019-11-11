@@ -357,7 +357,6 @@ void EventHandler (void *data)
     else if (d->EventType == DEPARTURE) Departure (d);
     else {fprintf (stderr, "Illegal event found\n"); exit(1); }
     free (d); // Release memory for event paramters
-    free(data);
 }
 
 
