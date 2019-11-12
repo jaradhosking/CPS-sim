@@ -392,8 +392,8 @@ void Arrival (struct EventData *e)
     if (e->EventType != ARRIVAL) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
     if (curStation->isExit == 1) {
-        printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d\n",
-                CurrentTime(), customerPtr->ID, componentID);
+        //printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d\n",
+                //CurrentTime(), customerPtr->ID, componentID);
         customerPtr->exitTime = CurrentTime();
 
         // update stats
@@ -404,9 +404,9 @@ void Arrival (struct EventData *e)
         customersExited += 1;
 
     } else if (curStation->isExit == 0) {
-        printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line\n",
-                CurrentTime(), customerPtr->ID, componentID, ++(curStation->inQueue));
-        //curStation->inQueue++;
+        //printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line\n",
+                //CurrentTime(), customerPtr->ID, componentID, ++(curStation->inQueue));
+        curStation->inQueue++;
         customerPtr->queueArrivalTime = CurrentTime();
         if (curStation->inQueue == 1) {
             // schedule next departure event
@@ -414,7 +414,6 @@ void Arrival (struct EventData *e)
             if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
             d->EventType = DEPARTURE;
             d->customerPtr = customerPtr;
-            printf("%d\n",customerPtr->ID);
             d->componentID = componentID;
             double serviceTime = randexp(curStation->P);
             d->customerPtr->serviceTime = serviceTime;
@@ -442,9 +441,9 @@ void Departure (struct EventData *e)
 
     if (e->EventType != DEPARTURE) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
-    printf ("Processing Departure event at time %f of customer %d in queue %d which now has %d in line\n",
-            CurrentTime(), customerPtr->ID, componentID, --(curStation->inQueue));
-    //curStation->inQueue--;
+    //printf ("Processing Departure event at time %f of customer %d in queue %d which now has %d in line\n",
+            //CurrentTime(), customerPtr->ID, componentID, --(curStation->inQueue));
+    curStation->inQueue--;
 
     // update stats
     double customerQueueTime = CurrentTime() - customerPtr->queueArrivalTime - customerPtr->serviceTime;
@@ -494,9 +493,9 @@ int main(int argc, char* argv[]) {
     //EndTime = strtof(argv[1], NULL);
     //char *configFilename = argv[2];
     //char *outputFilename = argv[3];
-    EndTime = 5;
+    EndTime = 240;
     char *configFilename = "config.txt";
-    char *outputFilename = "output16-4.txt";
+    char *outputFilename = "output16-1.txt";
     readConfig(configFilename);
     RunSim(EndTime);
     writeResults(outputFilename);

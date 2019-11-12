@@ -1,16 +1,16 @@
-During the simulation, 500 customers entered the system, and 331 exited the system.
-Among those who exited the system, customers averaged 38.724337 time units in the
-system, the minimum time spent in the system was 1.068015, and the maximum time
-spent was 131.667770.
-The total amount of time customers spent waiting in queues averaged to 24.962132,
-with the least time being 0.000000, and the greatest being 125.792932.
-For queue with ID 1, the average waiting time is 0.017201.
-For queue with ID 2, the average waiting time is 55.762751.
-For queue with ID 3, the average waiting time is 30.558481.
-For queue with ID 4, the average waiting time is 29.673435.
-For queue with ID 5, the average waiting time is 18.568287.
-For queue with ID 6, the average waiting time is 0.316614.
-For queue with ID 7, the average waiting time is 0.241484.
-For queue with ID 8, the average waiting time is 0.537712.
-For queue with ID 9, the average waiting time is 0.705271.
-For queue with ID 10, the average waiting time is 1.165211.
+During the simulation, 524 customers entered the system, and 336 exited the system.
+Among those who exited the system, customers averaged 51.955052 time units in the
+system, the minimum time spent in the system was 2.101050, and the maximum time
+spent was 141.937160.
+The total amount of time customers spent waiting in queues averaged to 32.605768,
+with the least time being 0.000000, and the greatest being 138.027892.
+For queue with ID 1, the average waiting time is 0.027085.
+For queue with ID 2, the average waiting time is 43.587724.
+For queue with ID 3, the average waiting time is 47.920707.
+For queue with ID 4, the average waiting time is 34.156349.
+For queue with ID 5, the average waiting time is 47.785548.
+For queue with ID 6, the average waiting time is 0.573859.
+For queue with ID 7, the average waiting time is 0.194548.
+For queue with ID 8, the average waiting time is 1.440830.
+For queue with ID 9, the average waiting time is 1.009644.
+For queue with ID 10, the average waiting time is 0.772485.
