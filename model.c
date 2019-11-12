@@ -258,7 +258,11 @@ void createGenerator(double P, int D) {
 
 
 void createExit(int ID) {
+    struct customerQueue *line = (struct customerQueue *)malloc(sizeof(struct customerQueue));
+    line->first = NULL;
+    line->last = NULL;
     station* new_station = (station *)malloc(sizeof(station));
+    new_station->line = line;
     new_station->ID=ID;
     new_station->isExit=1;
     new_station->P=-1;
@@ -271,6 +275,8 @@ void createExit(int ID) {
 
 void createStation(int ID, double P, double *probabilities, int *destinations) {
     struct customerQueue *line = (struct customerQueue *)malloc(sizeof(struct customerQueue));
+    line->first = NULL;
+    line->last = NULL;
     station* new_station = (station *)malloc(sizeof(station));
     new_station->ID=ID;
     new_station->isExit=0;
@@ -379,7 +385,6 @@ void EventHandler (void *data)
 // event handler for arrival events
 void Arrival (struct EventData *e)
 {
-    struct EventData *d;
     double ts;
     int componentID = e->componentID;
     struct customer *customerPtr = e->customerPtr;
@@ -405,9 +410,11 @@ void Arrival (struct EventData *e)
         customerPtr->queueArrivalTime = CurrentTime();
         if (curStation->inQueue == 1) {
             // schedule next departure event
+            struct EventData *d;
             if((d=malloc(sizeof(struct EventData)))==NULL) {fprintf(stderr, "malloc error\n"); exit(1);}
             d->EventType = DEPARTURE;
             d->customerPtr = customerPtr;
+            printf("%d\n",customerPtr->ID);
             d->componentID = componentID;
             double serviceTime = randexp(curStation->P);
             d->customerPtr->serviceTime = serviceTime;
@@ -484,9 +491,12 @@ void Departure (struct EventData *e)
 int main(int argc, char* argv[]) {
     customers = (struct customerQueue *)malloc(sizeof(struct customerQueue));
     srand(time(0));
-    EndTime = strtof(argv[1], NULL);
-    char *configFilename = argv[2];
-    char *outputFilename = argv[3];
+    //EndTime = strtof(argv[1], NULL);
+    //char *configFilename = argv[2];
+    //char *outputFilename = argv[3];
+    EndTime = 5;
+    char *configFilename = "config.txt";
+    char *outputFilename = "output16-4.txt";
     readConfig(configFilename);
     RunSim(EndTime);
     writeResults(outputFilename);
