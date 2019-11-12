@@ -3,6 +3,8 @@
 //
 //  Created by Richard Fujimoto on 9/24/17.
 //  Copyright © 2017 Richard Fujimoto. All rights reserved.
+//  Edits by Jarad Hosking & Cullen Stockmeyer
+//  Last Modified on 11/11/2019.
 //
 
 #ifndef SAMPLESIMULATION_SIM_H
