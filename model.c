@@ -491,15 +491,3 @@ int main(int argc, char* argv[]) {
     writeResults(outputFilename);
     return(0);
 }
- /*
-int main(int argc, char* argv[]) {
-    customers = (struct customerQueue *)malloc(sizeof(struct customerQueue));
-    srand(time(0));
-    EndTime = 240;
-    char *configFilename = "config.txt";
-    char *outputFilename = "output16-1.txt";
-    readConfig(configFilename);
-    RunSim(EndTime);
-    writeResults(outputFilename);
-    return(0);
-}*/
