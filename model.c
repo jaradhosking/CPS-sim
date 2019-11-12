@@ -192,8 +192,14 @@ void readConfig(char *configFilename) {
             fscanf(ifp,"%lf %d",&avgServiceTime,&numRoutes);
             int *destinations = (int *)malloc(numRoutes*sizeof(int));
             double *probs = (double *)malloc(numRoutes*sizeof(double));
+            double totprob = 0;
             for (int j = 0; j < numRoutes; j++) {
                 fscanf(ifp,"%lf",&probs[j]);
+                totprob += probs[j];
+            }
+            if (totprob != 1.0) {
+                fprintf(stderr,"Error: probabilities for destinations of station %d don't sum to 1!\n", id);
+                exit(1);
             }
             for (int j = 0; j < numRoutes; j++) {
                 fscanf(ifp,"%d",&destinations[j]);
@@ -341,7 +347,7 @@ void writeResults(char *outputFilename) {
         fprintf(ofp, "The total amount of time customers spent waiting in queues averaged to %f,\nwith the "
                      "least time being %f, and the greatest being %f.\n",
                 avgWaitTime, minWaitTime, maxWaitTime);
-        for (int i = 0; i < numComponents; i++) {
+        for (i = 0; i < numComponents; i++) {
             if (stations[i]->isExit == 0) {
                 if (stations[i]->avgWait == -1) {
                     fprintf(ofp,"For queue with ID %d, no one came to this queue!\n", i);
@@ -490,12 +496,9 @@ void Departure (struct EventData *e)
 int main(int argc, char* argv[]) {
     customers = (struct customerQueue *)malloc(sizeof(struct customerQueue));
     srand(time(0));
-    //EndTime = strtof(argv[1], NULL);
-    //char *configFilename = argv[2];
-    //char *outputFilename = argv[3];
-    EndTime = 240;
-    char *configFilename = "config.txt";
-    char *outputFilename = "output16-1.txt";
+    EndTime = strtof(argv[1], NULL);
+    char *configFilename = argv[2];
+    char *outputFilename = argv[3];
     readConfig(configFilename);
     RunSim(EndTime);
     writeResults(outputFilename);
