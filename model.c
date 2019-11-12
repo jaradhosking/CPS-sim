@@ -236,6 +236,7 @@ void createGenerator(double P, int D) {
             new_customer->entryTime = total_time;
             new_customer->exitTime = -1;
             new_customer->Next = NULL;
+            new_customer->NextAll = NULL;
             new_customer->ID = ++customerIDiterator;
             new_customer->waitingTime = 0;
             new_customer->serviceTime = 0;
@@ -386,8 +387,8 @@ void Arrival (struct EventData *e)
     if (e->EventType != ARRIVAL) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
     if (curStation->isExit == 1) {
-        //printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d\n",
-                //CurrentTime(), customerPtr->ID, componentID);
+        printf ("Processing Arrival event at time %f of customer %d in exit component with ID %d\n",
+                CurrentTime(), customerPtr->ID, componentID);
         customerPtr->exitTime = CurrentTime();
 
         // update stats
@@ -398,9 +399,9 @@ void Arrival (struct EventData *e)
         customersExited += 1;
 
     } else if (curStation->isExit == 0) {
-        //printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line\n",
-                //CurrentTime(), customerPtr->ID, componentID, ++(curStation->inQueue));
-        curStation->inQueue++;
+        printf ("Processing Arrival event at time %f of customer %d in queue %d which now has %d in line\n",
+                CurrentTime(), customerPtr->ID, componentID, ++(curStation->inQueue));
+        //curStation->inQueue++;
         customerPtr->queueArrivalTime = CurrentTime();
         if (curStation->inQueue == 1) {
             // schedule next departure event
@@ -434,9 +435,9 @@ void Departure (struct EventData *e)
 
     if (e->EventType != DEPARTURE) {fprintf (stderr, "Unexpected event type\n"); exit(1);}
 
-    //printf ("Processing Departure event at time %f of customer %d in queue %d which now has %d in line\n",
-            //CurrentTime(), customerPtr->ID, componentID, --(curStation->inQueue));
-    curStation->inQueue--;
+    printf ("Processing Departure event at time %f of customer %d in queue %d which now has %d in line\n",
+            CurrentTime(), customerPtr->ID, componentID, --(curStation->inQueue));
+    //curStation->inQueue--;
 
     // update stats
     double customerQueueTime = CurrentTime() - customerPtr->queueArrivalTime - customerPtr->serviceTime;
